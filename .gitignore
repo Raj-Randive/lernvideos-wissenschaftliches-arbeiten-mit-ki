@@ -10,8 +10,11 @@ __pycache__/
 # --- generated output (rebuild any time with ./lernvideo build) ---
 videos/*/export/
 
-# --- large reference videos (130-160 MB each folder) ---
-_referenz/*
+# --- reference material (old drafts, audio, transcripts): stays on disk only ---
+_referenz/
+
+# --- Claude Code worktrees (temporary working copies) ---
+.claude/worktrees/
 
 # --- temp / system files ---
 ~$*.pptx
