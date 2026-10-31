@@ -1,0 +1,22 @@
+{
+  "elevenlabs": {
+    "voice_name": "Herb",
+    "model_id": "eleven_v3",
+    "language_code": "de",
+    "speed": 1.06,
+    "stability": 0.64,
+    "similarity_boost": 0.80,
+    "style": 0.0,
+    "use_speaker_boost": true,
+    "output_format": "mp3_44100_128"
+  },
+  "video": {
+    "pause_before_audio_s": 0.3,
+    "pause_after_audio_s": 1.5,
+    "slide_without_audio_s": 4.0,
+    "animation_delay_s": 1.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  }
+}

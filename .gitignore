@@ -1,0 +1,20 @@
+# --- secrets: never commit ---
+.elevenlabs_key
+.env
+
+# --- Python environment (recreated automatically by ./lernvideo) ---
+tools/.venv/
+__pycache__/
+*.pyc
+
+# --- generated output (rebuild any time with ./lernvideo build) ---
+videos/*/export/
+
+# --- large reference videos (130-160 MB each folder) ---
+_referenz/*
+
+# --- temp / system files ---
+~$*.pptx
+.~lock.*#
+.DS_Store
+Thumbs.db

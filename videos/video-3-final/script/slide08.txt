@@ -1,0 +1,3 @@
+Die Folie zeigt den Begründungszusammenhang als Ablauf. Oben stehen wieder Problem, Theorie und vorliegende Untersuchungen. Danach teilt sich der Weg in zwei Stränge, die zusammengehören.
+Der linke Strang ist methodisch: von den Hypothesen zur geeigneten Methode, zur Stichprobe und zu den statistischen Verfahren. Dazu kommen wir gleich.
+Der rechte Strang ist begrifflich, und um den geht es jetzt. Er beginnt mit der Definition von Begriffen. Alle Begriffe, die in einer Hypothese vorkommen, müssen definiert werden. Dann werden die relevanten Variablen isoliert. Und dann folgt die Operationalisierung.

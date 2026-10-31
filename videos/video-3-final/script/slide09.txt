@@ -1,0 +1,2 @@
+Die Operationalisierung hat den Zweck, abstrakte Begriffe messbar zu machen. Dazu gehören die Kodierung und die Bildung von Indikatoren.
+Operationalisierung verbindet also die begriffliche Ebene mit der beobachtbaren Realität. Ein einfaches Beispiel ist Zufriedenheit: Du erfasst sie auf einer Skala von eins, sehr unzufrieden, bis fünf, sehr zufrieden.
