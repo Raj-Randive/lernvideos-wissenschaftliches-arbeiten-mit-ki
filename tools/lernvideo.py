@@ -23,7 +23,7 @@ PLACEHOLDER = re.compile(r"\[\[.*?\]\]")
 
 # ---------------------------------------------------------------- helpers
 def die(msg):
-    sys.exit(f"\nFEHLER / ERROR: {msg}")
+    sys.exit(f"\nERROR: {msg}")
 
 
 def slug(name):
@@ -38,21 +38,21 @@ def resolve_video(arg):
         dirs = [d for d in sorted(glob.glob(os.path.join(VIDEOS, "*"))) if os.path.isdir(d)]
         if len(dirs) == 1:
             return dirs[0]
-        die("Bitte Video-Ordner angeben, z.B.  ./lernvideo audio " +
-            (os.path.basename(dirs[0]) if dirs else "<ordner>"))
+        die("Please name the video folder, e.g.  ./lernvideo audio " +
+            (os.path.basename(dirs[0]) if dirs else "<folder>"))
     for cand in (arg, os.path.join(VIDEOS, arg)):
         if os.path.isdir(cand):
             return os.path.abspath(cand)
     hits = [d for d in glob.glob(os.path.join(VIDEOS, "*")) if os.path.basename(d).startswith(arg)]
     if len(hits) == 1:
         return hits[0]
-    die(f"Video-Ordner '{arg}' nicht gefunden in videos/")
+    die(f"Video folder '{arg}' not found in videos/")
 
 
 def find_pptx(vdir):
     decks = [p for p in glob.glob(os.path.join(vdir, "*.pptx")) if not os.path.basename(p).startswith("~$")]
     if len(decks) != 1:
-        die(f"Im Ordner {vdir} muss genau eine .pptx liegen (gefunden: {len(decks)}).")
+        die(f"The folder {vdir} must contain exactly one .pptx (found: {len(decks)}).")
     return decks[0]
 
 
@@ -114,7 +114,7 @@ def cmd_extract(a):
         d = os.path.join(VIDEOS, slug(os.path.splitext(os.path.basename(deck))[0]))
         os.makedirs(d, exist_ok=True)
         shutil.move(deck, os.path.join(d, os.path.basename(deck)))
-        print(f"Neues Video: {os.path.relpath(d, ROOT)}/")
+        print(f"New video: {os.path.relpath(d, ROOT)}/")
         if a.video is None:
             a.video = d
     vdir = resolve_video(a.video)
@@ -124,23 +124,23 @@ def cmd_extract(a):
 
     prs = Presentation(deck)
     sw, sh = prs.slide_width, prs.slide_height
-    md = [f"# Extrakt: {os.path.basename(deck)}\n",
-          "Original-Folientext und Sprechernotizen. Grundlage für das Korrekturlesen.\n"]
+    md = [f"# Extract: {os.path.basename(deck)}\n",
+          "Original slide text and speaker notes. Basis for proofreading.\n"]
     written, kept, missing, chars = 0, 0, [], 0
     for n, slide in enumerate(prs.slides, 1):
         hidden = slide._element.get("show") == "0"
         notes = slide.notes_slide.notes_text_frame.text.strip() if slide.has_notes_slide else ""
         texts = []
         shape_texts(slide.shapes, sw, sh, texts)
-        md.append(f"\n## Folie {n}{'  (AUSGEBLENDET / hidden – wird übersprungen)' if hidden else ''}\n")
-        md.append("**Sichtbarer Folientext:**\n")
+        md.append(f"\n## Slide {n}{'  (HIDDEN – skipped)' if hidden else ''}\n")
+        md.append("**Visible slide text:**\n")
         for t, off in texts:
             if re.fullmatch(r"\d{1,3}", t):
                 continue  # slide numbers
-            flag = "  ⚠ *liegt außerhalb der Folie (unsichtbar)*" if off else ""
+            flag = "  ⚠ *outside the slide area (invisible)*" if off else ""
             md.append("- " + t.replace("\n", " / ") + flag)
-        md.append("\n**Sprechernotizen (Original):**\n")
-        md.append(("> " + notes.replace("\n", "\n> ")) if notes else "> *(keine Notizen)*")
+        md.append("\n**Speaker notes (original):**\n")
+        md.append(("> " + notes.replace("\n", "\n> ")) if notes else "> *(no notes)*")
         if hidden:
             continue
         p = script_path(vdir, n)
@@ -154,13 +154,13 @@ def cmd_extract(a):
         chars += len(notes)
     open(os.path.join(vdir, "script", "_extrakt.md"), "w", encoding="utf-8").write("\n".join(md) + "\n")
 
-    print(f"{os.path.relpath(vdir, ROOT)}: {len(prs.slides)} Folien, {written} Skripte geschrieben, "
-          f"{kept} vorhandene behalten (--force zum Überschreiben), ~{chars} Zeichen")
+    print(f"{os.path.relpath(vdir, ROOT)}: {len(prs.slides)} slides, {written} scripts written, "
+          f"{kept} existing kept (--force to overwrite), ~{chars} characters")
     if missing:
-        print(f"  ⚠ Folien ohne Sprechernotizen: {missing}  -> Text in script/slideNN.txt schreiben "
-              f"(oder leer lassen = Folie ohne Ton)")
-    print("\nNächster Schritt: Skript korrekturlesen lassen (Claude: \"lies videos/"
-          f"{os.path.basename(vdir)} Korrektur\"), dann:  ./lernvideo audio {os.path.basename(vdir)} --slides 1")
+        print(f"  ⚠ Slides without speaker notes: {missing}  -> write text into script/slideNN.txt "
+              f"(or leave empty = slide without audio)")
+    print("\nNext step: have the script proofread (tell Claude: \"proofread videos/"
+          f"{os.path.basename(vdir)}\"), then:  ./lernvideo audio {os.path.basename(vdir)} --slides 1")
 
 
 # ---------------------------------------------------------------- audio
@@ -178,11 +178,11 @@ def api_key():
     if not k and os.path.exists(f):
         k = open(f).read().strip()
     if k and "REPLACE" in k:
-        die("In .elevenlabs_key steht noch der Platzhalter. Bitte durch deinen echten "
-            "ElevenLabs API-Key ersetzen (ElevenLabs > Developers > API Keys).")
+        die(".elevenlabs_key still contains the placeholder. Please replace it with your real "
+            "ElevenLabs API key (ElevenLabs > Developers > API Keys).")
     if not k:
-        die("Kein ElevenLabs API-Key. Key in die Datei  .elevenlabs_key  im Projektordner "
-            "einfügen (eine Zeile) oder  export ELEVENLABS_API_KEY=...")
+        die("No ElevenLabs API key. Put the key into the file  .elevenlabs_key  in the project folder "
+            "(one line) or  export ELEVENLABS_API_KEY=...")
     return k
 
 
@@ -195,8 +195,8 @@ def find_voice(key, name):
     exact = [v for v in voices if v["name"].lower() == name.lower()]
     hits = exact or [v for v in voices if v["name"].lower().startswith(name.lower())]
     if not hits:
-        die(f"Stimme '{name}' nicht gefunden. Vorhanden: " + ", ".join(v["name"] for v in voices) +
-            "\n  -> voice_name in config.json anpassen.")
+        die(f"Voice '{name}' not found. Available: " + ", ".join(v["name"] for v in voices) +
+            "\n  -> adjust voice_name in config.json.")
     return hits[0]["voice_id"], hits[0]["name"]
 
 
@@ -211,7 +211,7 @@ def tts(key, voice_id, text, cfg):
         msg = e.read().decode(errors="replace")
         if e.code in (400, 422) and "stability" in msg.lower():
             s = min((0.0, 0.5, 1.0), key=lambda x: abs(x - vs["stability"]))
-            print(f"(Modell akzeptiert stability {vs['stability']} nicht -> {s}) ", end="", flush=True)
+            print(f"(model does not accept stability {vs['stability']} -> {s}) ", end="", flush=True)
             body["voice_settings"]["stability"] = s
             return api("POST", f"/text-to-speech/{voice_id}", key, body, q)
         die(f"ElevenLabs {e.code}: {msg}")
@@ -223,7 +223,7 @@ def cmd_audio(a):
     wanted = parse_slides(a.slides)
     files = sorted(glob.glob(os.path.join(vdir, "script", "slide*.txt")))
     if not files:
-        die(f"Keine Skripte. Zuerst:  ./lernvideo extract {os.path.basename(vdir)}")
+        die(f"No scripts. First run:  ./lernvideo extract {os.path.basename(vdir)}")
     jobs = []
     for f in files:
         n = int(re.search(r"slide(\d+)", f).group(1))
@@ -231,31 +231,31 @@ def cmd_audio(a):
             continue
         text = read_script(vdir, n)
         if PLACEHOLDER.search(text):
-            die(f"script/slide{n:02d}.txt enthält noch einen Platzhalter {PLACEHOLDER.findall(text)} "
-                f"-> bitte ausfüllen.")
+            die(f"script/slide{n:02d}.txt still contains a placeholder {PLACEHOLDER.findall(text)} "
+                f"-> please fill it in.")
         if not text:
-            print(f"Folie {n:2d}: kein Text -> Folie ohne Ton")
+            print(f"Slide {n:2d}: no text -> slide without audio")
             continue
         if os.path.exists(audio_path(vdir, n)) and not a.force:
-            print(f"Folie {n:2d}: Audio vorhanden, übersprungen (--force zum Neu-Erzeugen)")
+            print(f"Slide {n:2d}: audio exists, skipped (--force to regenerate)")
             continue
         jobs.append((n, text))
     total = sum(len(t) for _, t in jobs)
-    print(f"\n{len(jobs)} Folie(n), {total} Zeichen ≈ {total} Credits  "
+    print(f"\n{len(jobs)} slide(s), {total} characters ≈ {total} credits  "
           f"[{cfg['voice_name']}, {cfg['model_id']}, speed {cfg['speed']}]")
     if a.dry_run or not jobs:
         return
     key = api_key()
     voice_id, vname = find_voice(key, cfg["voice_name"])
-    print(f"Stimme: {vname} ({voice_id})")
+    print(f"Voice: {vname} ({voice_id})")
     log = os.path.join(vdir, "audio", "_log.csv")
     new = not os.path.exists(log)
     with open(log, "a", newline="", encoding="utf-8") as lf:
         w = csv.writer(lf)
         if new:
-            w.writerow(["zeit", "folie", "zeichen", "credits", "dauer_s", "stimme", "modell", "settings"])
+            w.writerow(["time", "slide", "characters", "credits", "duration_s", "voice", "model", "settings"])
         for n, text in jobs:
-            print(f"Folie {n:2d}: {len(text):5d} Zeichen ... ", end="", flush=True)
+            print(f"Slide {n:2d}: {len(text):5d} characters ... ", end="", flush=True)
             audio, hdr = tts(key, voice_id, text, cfg)
             out = audio_path(vdir, n)
             open(out, "wb").write(audio)
@@ -264,7 +264,7 @@ def cmd_audio(a):
             w.writerow([datetime.datetime.now().isoformat(timespec="seconds"), n, len(text),
                         hdr.get("character-cost", ""), f"{d:.1f}", vname, cfg["model_id"], json.dumps(cfg)])
             time.sleep(0.3)
-    print(f"\nAnhören in {os.path.relpath(os.path.join(vdir, 'audio'), ROOT)}/ – dann:  "
+    print(f"\nListen in {os.path.relpath(os.path.join(vdir, 'audio'), ROOT)}/ – then:  "
           f"./lernvideo build {os.path.basename(vdir)}")
 
 
@@ -279,11 +279,11 @@ def plan(vdir, prs):
         text = read_script(vdir, n)
         ap = audio_path(vdir, n)
         if text is None:
-            die(f"script/slide{n:02d}.txt fehlt (Folienzahl geändert?) -> ./lernvideo extract")
+            die(f"script/slide{n:02d}.txt is missing (number of slides changed?) -> ./lernvideo extract")
         if text and not os.path.exists(ap):
-            die(f"Audio für Folie {n} fehlt -> ./lernvideo audio {os.path.basename(vdir)}")
+            die(f"Audio for slide {n} is missing -> ./lernvideo audio {os.path.basename(vdir)}")
         if text and os.path.getmtime(script_path(vdir, n)) > os.path.getmtime(ap) + 1:
-            print(f"  ⚠ Folie {n}: Skript ist neuer als das Audio (--slides {n} --force neu erzeugen?)")
+            print(f"  ⚠ Slide {n}: script is newer than its audio (regenerate with --slides {n} --force?)")
         if text:
             d = duration(ap)
             total = v["pause_before_audio_s"] + d + v["pause_after_audio_s"]
@@ -410,7 +410,7 @@ def build_pptx(deck, rows, out):
         (ext.addprevious(timing) if ext is not None else sld.append(timing))
         _set_advance(sld, row["total"] * 1000)
         if conv:
-            report.append(f"Folie {row['n']}: {conv} Klick-Animation(en) -> automatisch")
+            report.append(f"Slide {row['n']}: {conv} on-click animation(s) -> automatic")
     prs.save(out)
     return report
 
@@ -420,7 +420,7 @@ def soffice():
     for c in ("soffice", "libreoffice", "/snap/bin/libreoffice", "/usr/bin/soffice"):
         if shutil.which(c):
             return shutil.which(c)
-    die("LibreOffice nicht gefunden (für MP4 nötig). Mit --no-mp4 nur die PPTX bauen.")
+    die("LibreOffice not found (needed for the MP4). Use --no-mp4 to build only the PPTX.")
 
 
 def build_mp4(deck, rows, out, workdir):
@@ -428,17 +428,17 @@ def build_mp4(deck, rows, out, workdir):
     W, H, fps = v["width"], v["height"], v["fps"]
     shutil.rmtree(workdir, ignore_errors=True)
     os.makedirs(workdir)
-    print("  Folien rendern (LibreOffice) ...")
+    print("  Rendering slides (LibreOffice) ...")
     r = subprocess.run([soffice(), f"-env:UserInstallation=file://{workdir}/lo-profile", "--headless",
                         "--convert-to", "pdf", "--outdir", workdir, deck], capture_output=True, text=True)
     pdf = os.path.join(workdir, os.path.splitext(os.path.basename(deck))[0] + ".pdf")
     if not os.path.exists(pdf):
-        die("LibreOffice-Export fehlgeschlagen:\n" + r.stdout + r.stderr)
+        die("LibreOffice export failed:\n" + r.stdout + r.stderr)
     subprocess.run(["pdftoppm", "-png", "-scale-to", str(W), pdf, os.path.join(workdir, "img")], check=True)
     imgs = sorted(glob.glob(os.path.join(workdir, "img-*.png")))
     visible = [row for row in rows if not row["hidden"]]
     if len(imgs) != len(visible):
-        die(f"{len(imgs)} gerenderte Seiten, aber {len(visible)} sichtbare Folien.")
+        die(f"{len(imgs)} rendered pages, but {len(visible)} visible slides.")
     segs = []
     for row, img in zip(visible, imgs):
         seg = os.path.join(workdir, f"seg{row['n']:02d}.mp4")
@@ -450,7 +450,7 @@ def build_mp4(deck, rows, out, workdir):
         else:
             ain = ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo"]
             af = "anull"
-        print(f"  Folie {row['n']:2d}: {row['total']:5.1f} s")
+        print(f"  Slide {row['n']:2d}: {row['total']:5.1f} s")
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-framerate", str(fps), "-i", img, *ain,
                         "-vf", vf, "-af", af, "-map", "0:v", "-map", "1:a", "-t", f"{row['total']:.3f}",
                         "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-crf", "18",
@@ -472,13 +472,13 @@ def cmd_build(a):
     exp = os.path.join(vdir, "export")
     os.makedirs(exp, exist_ok=True)
     total = sum(r.get("total", 0) for r in rows)
-    print(f"{len(rows)} Folien, Gesamtlänge {int(total // 60)}:{int(total % 60):02d} min")
+    print(f"{len(rows)} slides, total length {int(total // 60)}:{int(total % 60):02d} min")
     if not a.no_pptx:
         out = os.path.join(exp, f"{stem}_mit_audio.pptx")
         for line in build_pptx(deck, rows, out):
             print("  " + line)
-        print(f"✔ {os.path.relpath(out, ROOT)}   (in PowerPoint: Datei > Exportieren > Video erstellen >"
-              f" 'Aufgezeichnete Zeiten und Kommentare verwenden')")
+        print(f"✔ {os.path.relpath(out, ROOT)}   (in PowerPoint: File > Export > Create a Video >"
+              f" 'Use Recorded Timings and Narrations')")
     if not a.no_mp4:
         out = os.path.join(exp, f"{stem}.mp4")
         build_mp4(deck, rows, out, os.path.join(exp, "_render_tmp"))
@@ -491,18 +491,18 @@ def cmd_status(a):
     dirs = [d for d in sorted(glob.glob(os.path.join(VIDEOS, "*"))) if os.path.isdir(d)]
     loose = glob.glob(os.path.join(VIDEOS, "*.pptx"))
     for d in loose:
-        print(f"NEU (noch nicht extrahiert): {os.path.basename(d)}  -> ./lernvideo extract")
+        print(f"NEW (not extracted yet): {os.path.basename(d)}  -> ./lernvideo extract")
     for d in dirs:
         decks = glob.glob(os.path.join(d, "*.pptx"))
         n = len(Presentation(decks[0]).slides) if len(decks) == 1 else "?"
         sc = len(glob.glob(os.path.join(d, "script", "slide*.txt")))
         au = len(glob.glob(os.path.join(d, "audio", "slide*.mp3")))
         ex = [os.path.basename(x) for x in glob.glob(os.path.join(d, "export", "*")) if not x.endswith("_tmp")]
-        rv = "ja" if os.path.exists(os.path.join(d, "script", "_review.md")) else "nein"
-        print(f"{os.path.basename(d)}: {n} Folien | Skripte {sc} | korrekturgelesen {rv} | Audio {au} | "
+        rv = "yes" if os.path.exists(os.path.join(d, "script", "_review.md")) else "no"
+        print(f"{os.path.basename(d)}: {n} slides | scripts {sc} | proofread {rv} | audio {au} | "
               f"Export: {', '.join(ex) or '-'}")
     if not dirs and not loose:
-        print("Noch keine Videos. Eine .pptx in videos/ einfügen und  ./lernvideo extract  ausführen.")
+        print("No videos yet. Paste a .pptx into videos/ and run  ./lernvideo extract")
 
 
 # ---------------------------------------------------------------- main
@@ -514,13 +514,13 @@ def main():
     s.set_defaults(fn=cmd_status)
     s = sub.add_parser("extract")
     s.add_argument("video", nargs="?")
-    s.add_argument("--force", action="store_true", help="vorhandene Skripte überschreiben")
+    s.add_argument("--force", action="store_true", help="overwrite existing scripts")
     s.set_defaults(fn=cmd_extract)
     s = sub.add_parser("audio")
     s.add_argument("video", nargs="?")
-    s.add_argument("--slides", help="z.B. 1  oder 3,5  oder 2-6")
-    s.add_argument("--force", action="store_true", help="vorhandenes Audio neu erzeugen")
-    s.add_argument("--dry-run", action="store_true", help="nur Zeichen/Credits anzeigen")
+    s.add_argument("--slides", help="e.g. 1  or  3,5  or  2-6")
+    s.add_argument("--force", action="store_true", help="regenerate existing audio")
+    s.add_argument("--dry-run", action="store_true", help="only show characters/credits")
     s.set_defaults(fn=cmd_audio)
     s = sub.add_parser("build")
     s.add_argument("video", nargs="?")

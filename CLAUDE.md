@@ -38,7 +38,7 @@ not in git). These rules replace the references; you don't need to open them.
 4. Mark anything only the user can decide as `[[...]]` (e.g. an unknown name or date).
    `./lernvideo audio` refuses to run while a placeholder is left.
 5. Also check the **visible slide text** in `_extrakt.md` for typos. Report them; don't edit the pptx.
-   Text flagged "außerhalb der Folie" is invisible and harmless.
+   Text flagged "outside the slide area" is invisible and harmless.
 6. Write `script/_review.md`:
    - open checklist (placeholders, slide-text typos)
    - table of every change (slide | original | corrected | why)
